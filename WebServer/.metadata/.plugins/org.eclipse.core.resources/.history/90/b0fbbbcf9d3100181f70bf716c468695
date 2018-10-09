@@ -1,0 +1,229 @@
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>구 단위 행정구역별 메시지 보내기</title>
+<!-- <style>
+/* #map-canvas {
+	width: 500px;
+	height: 400px;
+} */
+html, body, #map-canvas {
+	height: 100%;
+	width: 100%;
+	margin: 0px;
+	padding: 0px
+}
+.layer-wizard-search-label {
+	font-family: sans-serif
+}
+;
+</style> -->
+<style>
+#map-canvas {
+	width: 1266px;
+	height: 685px;
+}
+
+/* .layer-wizard-search-label {
+	font-family: sans-serif
+} */
+;
+</style>
+<!-- Bootstrap core CSS -->
+<!-- <link href="resources/css/bootstrap.min.css" rel="stylesheet"> -->
+<link rel="stylesheet"
+	href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+	integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+	crossorigin="anonymous">
+<script async defer
+	src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB-piUzE0yEjihy1zSuWDKZ5i_0tdMlcw0"
+	type="text/javascript"></script><!-- initMap -->
+<script type="text/javascript"
+	src="http://maps.google.com/maps/api/js?sensor=false">
+</script>
+<script src="https://code.jquery.com/jquery-1.12.3.min.js"></script>
+<script type="text/javascript">
+	var layer_0;
+	var map;
+	function initialize() {
+		var latlng = new google.maps.LatLng(37.55317787685811,
+				126.98316778778997);
+		var mapOptions = {
+				zoom : 11,
+				center : latlng,
+				mapTypeId : google.maps.MapTypeId.ROADMAP
+		}
+		map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
+		current = new google.maps.LatLng(37.5640, 126.9751);
+		marker = new google.maps.Marker({
+			map : map
+		});
+		
+		script = document.createElement('script');
+        var url = ['https://www.googleapis.com/fusiontables/v1/query?'];
+        url.push('sql=');
+        var query = 'SELECT SIG_KOR_NM, geometry FROM ' +
+            '1z5lxrRhhii6yGgw6aLm8VYN8RxJLDqjiubddrLBl';
+        var encodedQuery = encodeURIComponent(query);
+        url.push(encodedQuery);
+        url.push('&callback=drawMap');
+        url.push('&key=AIzaSyAm9yWCV7JPCTHCJut8whOjARd7pwROFDQ');
+        script.src = url.join('');
+        body = document.getElementById('map-canvas');
+        body.appendChild(script);
+        
+		layer_0 = new google.maps.FusionTablesLayer({
+			query : {
+				select : "col0",
+				from : "1z5lxrRhhii6yGgw6aLm8VYN8RxJLDqjiubddrLBl"
+			},
+			map : map,
+			styleId : 2,
+			templateId : 2
+		});
+		timer = setInterval( function () {
+			$.ajax({
+				type:"POST",
+				url:"http://localhost:8080/WebServer/LocationController",
+				success:function(data){
+					var current = new google.maps.LatLng(data.latitude, data.longitude);
+					marker.setPosition(current);
+				},
+				error:function(request,status,error){
+					alert("code:"+request.status+"\n"+"message:"+request.responseText+"\n"+"error:"+error);
+				}
+			});
+			}, 100);
+	}
+	function drawMap(data) {
+        var rows = data['rows'];
+        for (var i in rows) {
+          var newCoordinates = [];
+          var geometries = rows[i][1]['geometries'];
+          if (geometries) {
+            for (var j in geometries) {
+              newCoordinates.push(constructNewCoordinates(geometries[j]));
+            }
+          } else {
+            newCoordinates = constructNewCoordinates(rows[i][1]['geometry']);
+          }
+          var country = new google.maps.Polygon({
+            paths: newCoordinates,
+            strokeColor: '#FF0000',
+            strokeOpacity: 0,
+            strokeWeight: 1,
+            fillColor: '#FF0000',
+            fillOpacity: 0
+          });
+          google.maps.event.addListener(country, 'mouseover', function() {
+            this.setOptions({fillOpacity: 0.7});
+          });
+          google.maps.event.addListener(country, 'mouseout', function() {
+            this.setOptions({fillOpacity: 0});
+          });
+          country.setMap(map);
+        }
+      }
+
+      function constructNewCoordinates(polygon) {
+        var newCoordinates = [];
+        var coordinates = polygon['coordinates'][0];
+        for (var i in coordinates) {
+          newCoordinates.push(
+              new google.maps.LatLng(coordinates[i][1], coordinates[i][0]));
+        }
+        return newCoordinates;
+      }
+	google.maps.event.addDomListener(window, 'load', initialize);
+</script>
+</head>
+<body>
+	<nav class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0">
+		<a class="navbar-brand col-sm-3 col-md-2 mr-0" href="<c:url value='/MainController?param=main'/>">서울시 실시간 유동인구<br>&nbsp;&nbsp;&nbsp;&nbsp;통합메시징 시스템</a> 
+		<input class="form-control form-control-dark w-100" type="text"placeholder="Search" aria-label="Search">
+		<ul class="navbar-nav px-3">
+			<li class="nav-item text-nowrap">
+				<a class="nav-link" href="#">Sign out</a>
+			</li>
+		</ul>
+	</nav>
+
+	<div class="container-fluid">
+		<div class="row">
+			<nav class="col-md-2 d-none d-md-block bg-light sidebar">
+			<div class="sidebar-sticky">
+				<ul class="nav flex-column">
+					<li class="nav-item"><a class="nav-link" href="<c:url value='/MainController?param=main'/>">
+							<span data-feather="home"></span> 실시간 유동인구
+					</a></li>
+					<li class="nav-item"><a class="nav-link" href="<c:url value='/MainController?param=district'/>">
+							<span data-feather="home"></span> 구 단위 메시지 보내기
+					</a></li>
+					<li class="nav-item"><a class="nav-link" href="<c:url value='/MainController?param=neighborhood'/>">
+							<span data-feather="home"></span> 동 단위 메시지 보내기
+					</a></li>
+					<li class="nav-item"><a class="nav-link" href="#"> <span
+							data-feather="users"></span> Customers
+					</a></li>
+					<li class="nav-item"><a class="nav-link" href="#"> <span
+							data-feather="bar-chart-2"></span> Reports
+					</a></li>
+					<li class="nav-item"><a class="nav-link" href="#"> <span
+							data-feather="layers"></span> Integrations
+					</a></li>
+				</ul>
+
+				<h6
+					class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+					<span>Saved reports</span> <a
+						class="d-flex align-items-center text-muted" href="#"> <span
+						data-feather="plus-circle"></span>
+					</a>
+				</h6>
+				<ul class="nav flex-column mb-2">
+					<li class="nav-item"><a class="nav-link" href="#"> <span
+							data-feather="file-text"></span> Current month
+					</a></li>
+					<li class="nav-item"><a class="nav-link" href="#"> <span
+							data-feather="file-text"></span> Last quarter
+					</a></li>
+					<li class="nav-item"><a class="nav-link" href="#"> <span
+							data-feather="file-text"></span> Social engagement
+					</a></li>
+					<li class="nav-item"><a class="nav-link" href="#"> <span
+							data-feather="file-text"></span> Year-end sale
+					</a></li>
+				</ul>
+			</div>
+			</nav>
+			<div id="map-canvas"></div>
+		</div>
+	</div>
+
+	<!-- Bootstrap core JavaScript
+    ================================================== -->
+	<!-- Placed at the end of the document so the pages load faster -->
+	<!-- <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+		integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+		crossorigin="anonymous"></script>
+	<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+		integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+		crossorigin="anonymous"></script> -->
+	<script
+		src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+		integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+		crossorigin="anonymous"></script>
+	<script src="resources/js/bootstrap.min.js"></script>
+
+	<!-- Icons -->
+	<script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
+	<script>
+		feather.replace()
+	</script>
+
+</body>
+</html>
