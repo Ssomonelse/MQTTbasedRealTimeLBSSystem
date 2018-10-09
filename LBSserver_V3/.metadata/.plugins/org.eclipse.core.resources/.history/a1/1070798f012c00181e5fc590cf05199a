@@ -1,0 +1,100 @@
+package dao2;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+
+import model.Location;
+
+public class LocationDAO {
+	
+	private static LocationDAO locationDAO = null;
+	private Connection conn = null;
+	private PreparedStatement pstmt = null;
+	private ResultSet rs = null;
+	
+	public static LocationDAO getInstance() {
+		if(locationDAO == null){
+			locationDAO = new LocationDAO();
+		}
+		return locationDAO;
+	}
+	
+	public void dbConnect() {
+
+        String url = "jdbc:mysql://localhost:3306/clocation";
+        String jdbc = "com.mysql.jdbc.Driver";
+        String user = "root";
+        String pass = "tlagusdyd";
+        
+        try {
+            Class.forName(jdbc);
+            
+            conn = DriverManager.getConnection(url, user, pass);
+        } catch(Exception e) {
+            System.out.println("SQLException: " + e.getMessage());
+        } finally{
+        }
+	}
+	
+	public void close(Connection conn, PreparedStatement pstmt){
+        try{
+            if ( pstmt != null){ pstmt.close(); }
+        }catch(Exception e){}
+        
+        try{
+            if ( conn != null){ conn.close(); }
+        }catch(Exception e){}        
+    }
+    
+    public void close(Connection conn, PreparedStatement pstmt, ResultSet rs){
+        try{
+            if ( rs != null){ rs.close(); }
+        }catch(Exception e){}
+        
+        try{
+            if ( pstmt != null){ pstmt.close(); }
+        }catch(Exception e){}
+        
+        try{
+            if ( conn != null){ conn.close(); }
+        }catch(Exception e){}        
+    }
+	
+	public void insertLocation(Double[] location) {
+		try {
+			dbConnect();
+			String sql = "insert into testmovelocation(latitude, longitude) values(?,?)";
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setDouble(1, location[0]);
+			pstmt.setDouble(2, location[1]);
+			
+			pstmt.executeUpdate();
+		} catch(Exception e) {
+			System.out.println("SQLException: " + e.getMessage());
+		} finally {
+			close(conn, pstmt);
+		}
+	}
+	
+	public Location getLeastLocation(){
+		Location location =  new Location();
+		try {
+			dbConnect();
+			String sql = "select latitude, longitude from testmovelocation where idtestmovelocation = (select max(idtestmovelocation) from testmovelocation);";
+			pstmt = conn.prepareStatement(sql);
+			rs = pstmt.executeQuery();
+			if(rs.next()) {
+				location.setLatitude(rs.getDouble("latitude"));
+				location.setLongitude(rs.getDouble("longitude"));
+			}
+		} catch(Exception e) {
+			System.out.println("SQLException: " + e.getMessage());
+		} finally {
+			close(conn, pstmt, rs);
+		}
+		return location;
+	}
+	
+}
